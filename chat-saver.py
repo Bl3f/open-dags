@@ -18,7 +18,7 @@ def pas_grand_chose():
 
 
 with DAG(
-    'tutorial',
+    'chat-saver',
     default_args=default_args,
     description='A simple DAG to get chat from Twitch streams and save it to BigQuery.',
     schedule_interval="0 2 * * *",
