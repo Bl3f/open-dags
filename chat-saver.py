@@ -77,7 +77,7 @@ with DAG(
         location="EU",
     )
 
-    with open(f"{conf.get('dags_folder')}/comments.schema.json", "r") as f:
+    with open(f"{conf.get('core', 'dags_folder')}/comments.schema.json", "r") as f:
         schema = json.load(f)
 
     t3 = GCSToBigQueryOperator(
