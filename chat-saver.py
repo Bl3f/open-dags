@@ -93,7 +93,7 @@ with DAG(
 
     )
 
-    t1 > t2 > t3
+    t1 >> t2 >> t3
 
 if __name__ == "__main__":
     get_chat_history("2021-06-04")
