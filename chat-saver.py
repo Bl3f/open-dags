@@ -10,6 +10,7 @@ from airflow.providers.google.cloud.hooks.gcs import GCSHook
 from airflow.providers.google.cloud.transfers.gcs_to_bigquery import GCSToBigQueryOperator
 from airflow.providers.google.cloud.operators.bigquery import BigQueryCreateEmptyDatasetOperator
 from airflow.models import Variable
+from airflow.settings import conf
 
 import twitch
 
@@ -32,16 +33,20 @@ def get_chat_history(ds, gcp_conn_id, bucket, path):
     client = twitch.Helix(os.getenv("TWITCH_CLIENT_ID"), os.getenv("TWITCH_CLIENT_SECRET"))
     hook = GCSHook(gcp_conn_id=gcp_conn_id)
 
-    tmp =  tempfile.NamedTemporaryFile()
+    tmp = tempfile.NamedTemporaryFile()
 
     for streamer_name in STREAMERS:
         with open(tmp.name, "w") as f:
-            print(f"Handle {streamer_name}.")
             streamer = client.user(streamer_name)
             for video in streamer.videos():
                 if ds in video.created_at:
                     for comment in video.comments:
-                        f.write(f"{json.dumps(comment.data)}\n")
+                        content = comment.data
+                        if "user_notice_params" in content["message"]:
+                            content["message"]["user_notice_params"] = {
+                                key.replace("-", "_"): value for key, value in content["message"]["user_notice_params"].items()
+                            }
+                        f.write(f"{json.dumps(content)}\n")
 
             hook.upload(
                 bucket_name=bucket, 
@@ -69,9 +74,10 @@ with DAG(
         gcp_conn_id=GCP_CONN_ID,
         project_id=PROJECT_ID,
         dataset_id="twitch",
+        location="EU",
     )
 
-    with open("open-dags/comments.schema.json", "r") as f:
+    with open(f"{conf.get('dags_folder')}/comments.schema.json", "r") as f:
         schema = json.load(f)
 
     t3 = GCSToBigQueryOperator(
@@ -84,6 +90,8 @@ with DAG(
         source_format='NEWLINE_DELIMITED_JSON',
         schema_fields=schema,
         write_disposition="write_append",
+        ignore_unknown_values=True,
+        location="EU",
 
     )
 
