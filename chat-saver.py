@@ -5,12 +5,10 @@ import tempfile
 from airflow import DAG
 from airflow.utils.dates import parse_execution_date
 from airflow.operators.python import PythonOperator
-from airflow.providers.google.cloud.transfers.local_to_gcs import LocalFilesystemToGCSOperator
 from airflow.providers.google.cloud.hooks.gcs import GCSHook
 from airflow.providers.google.cloud.transfers.gcs_to_bigquery import GCSToBigQueryOperator
 from airflow.providers.google.cloud.operators.bigquery import BigQueryCreateEmptyDatasetOperator
 from airflow.models import Variable
-from airflow.settings import conf
 
 import twitch
 
@@ -77,7 +75,7 @@ with DAG(
         location="EU",
     )
 
-    with open(f"{conf.get('core', 'dags_folder')}/comments.schema.json", "r") as f:
+    with open(f"{os.path.dirname(__file__)}/comments.schema.json", "r") as f:
         schema = json.load(f)
 
     t3 = GCSToBigQueryOperator(
